@@ -5,11 +5,13 @@
 import numpy as np
 
 class knn:
-    def __init__(self, k, train, test, n):
+    def __init__(self, k, train, test, train_labels, test_labels, n):
         self.k = k
-        self.num_labels = n
+        self.n_class = n
         self.train_data = train
         self.test_data = test
+        self.train_labels = train_labels
+        self.test_labels = test_labels
         self.predictions = None
 
     def get_distance(self, x):
@@ -29,9 +31,9 @@ class knn:
         indices = indices[:self.k]
 
         # get the class with maximum labels
-        label_count = np.zeros(self.num_labels)
+        label_count = np.zeros(self.n_class)
         for j in range(self.k):
-            c = indices[j]%self.num_labels
+            c = int(self.train_labels[indices[j]])
             label_count[c] = label_count[c] + 1
 
         pred = np.argmax(label_count)
@@ -57,7 +59,9 @@ class knn:
         correct = 0
 
         for i in range(l):
-            if (self.predictions[i] == i%self.num_labels):
+            if (self.predictions[i] == self.test_labels[i]):
                 correct = correct + 1
+            # else:
+            #     print(self.predictions[i], self.test_labels[i])
 
         return correct/float(l)
