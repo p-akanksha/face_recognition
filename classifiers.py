@@ -58,4 +58,6 @@ def bayes_classifier(data, labels, params, n_class, data_type=0):
         if(labels[i] == c):
             correct = correct + 1
 
+    print("Accuracy, ", float(correct)/l)
+
     return float(correct)/l

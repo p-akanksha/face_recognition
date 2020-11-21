@@ -14,9 +14,9 @@ random.seed(0)
 def transform_data(data, dataset):
     if dataset == 0:
         m, n, l = data.shape
-        result = np.zeros((m*n, 3, l/3))
+        result = np.zeros((m*n, 3, int(l/3)))
 
-        for i in range(l/3):
+        for i in range(int(l/3)):
             result[:, 0, i] = data[:, :, 3*i].flatten()
             result[:, 1, i] = data[:, :, 3*i+1].flatten()
             result[:, 2, i] = data[:, :, 3*i+2].flatten()
@@ -191,6 +191,7 @@ def split_util(data, data_type):
 # data_type: specify the dataset (0: DATA, 1: POSE, 2: ILLUMINATION)
 def split(data, data_labels, data_type, n_class, task):
     m, l = data.shape
+    print("ssssssssssss", m,l)
 
     data_class = []
 
@@ -207,12 +208,13 @@ def split(data, data_labels, data_type, n_class, task):
 
     data_class = np.asarray(data_class)
     print(data_class.shape)
-    data_class_2 = np.zeros((m, l/n_class, n_class))
-    for i in range(l/n_class):
+    data_class_2 = np.zeros((m, int(l/n_class), n_class))
+    for i in range(int(l/n_class)):
         for j in range(n_class):
             data_class_2[:,i,j] = data_class[j,i,:]
 
     data = data_class_2
+    print("DAta shape", data.shape)
 
     if task == 1:
         if data_type == 0:
