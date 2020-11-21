@@ -61,7 +61,5 @@ class knn:
         for i in range(l):
             if (self.predictions[i] == self.test_labels[i]):
                 correct = correct + 1
-            # else:
-            #     print(self.predictions[i], self.test_labels[i])
 
         return correct/float(l)

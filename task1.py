@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # 0 : DATA
     # 1 : POSE
     # 2 : ILLUMINATION
-    dataset = 1
+    dataset = 0
 
     if dataset == 0:
         data = data_
@@ -164,9 +164,21 @@ if __name__ == '__main__':
     # parameter to choose PCA or MDA
     dim_red = 0
     if dim_red == 0:
-        data, data_labels = PCA(data, 0.15)
-    else:        
-        data, data_labels = MDA(data, n_class, 20)
+        if os.path.exists("PCA_" + str(dataset) + ".csv") and os.path.exists("PCA_labels_" + str(dataset) + ".csv"):
+            print("Loading saved PCA...")
+            data = np.genfromtxt("PCA_" + str(dataset) + ".csv", delimiter=',').astype('float')
+            data_labels = np.genfromtxt("PCA_labels_" + str(dataset) + ".csv", delimiter=',').astype('float')
+        else:
+            print("Applying PCA...")
+            data, data_labels = PCA(data, 0.15)
+    else:
+        if os.path.exists("MDA_" + str(dataset) + ".csv") and os.path.exists("MDA_labels_" + str(dataset) + ".csv"):
+            print("Loading saved MDA...")
+            data = np.genfromtxt("MDA_" + str(dataset) + ".csv", delimiter=',').astype('float')
+            data_labels = np.genfromtxt("MDA_labels_" + str(dataset) + ".csv", delimiter=',').astype('float')
+        else:
+            print("Applying MDA...")    
+            data, data_labels = MDA(data, n_class, 20, dataset)
 
     print("Splitting data...")
     train, train_labels, test, test_labels = format_data.split(data, data_labels, dataset, n_class, 1)
@@ -176,60 +188,51 @@ if __name__ == '__main__':
     knn_ = knn(k, train, test, train_labels, test_labels, n_class)
     knn_.get_prediction()
     acc = knn_.accuracy()
-    print(acc)
+    print("knn Accuracy: ", acc)
 
     # Bayes classifier
     mean, cov = MLE(train, train_labels, n_class)
-    classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
+    bayes_acc = classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
+    print("Bayes Accuracy: ", acc)
 
 
-    # lw = 5.0
-    # legend = []
-    # for thresh in range(35, 5,-10):
+    ################################################
+    # Uncomment for generating experimental graphs #
+    ################################################
 
-    #     # reduce dimensions
-    #     data_pca = PCA(data, thresh/float(100))
+    '''
+    # knn with PCA
+    legend = []
+    for thresh in range(35, 5,-10):
 
-    #     # split data in to test and train 
-    #     # if os.path.exists("train_" + str(dataset) + ".csv"):
-    #     #     print("Loading saved data...")
-    #     #     train = np.genfromtxt("train_" + str(dataset) + ".csv", delimiter=',').astype('int')
-    #     #     test = np.genfromtxt("test_" + str(dataset) + ".csv", delimiter=',').astype('int')
-    #     #     train_labels = np.genfromtxt("train_labels_" + str(dataset) + ".csv", delimiter=',').astype('int')
-    #     #     test_labels = np.genfromtxt("test_labels_" + str(dataset) + ".csv", delimiter=',').astype('int')
-    #     # else:
-    #     print("Splitting data...")
-    #     train, train_labels, test, test_labels = format_data.split(data, dataset, 1)
+        # reduce dimensions
+        data, data_labels = PCA(data, thresh/float(100))
+        
+        # Split data in training and testing
+        print("Splitting data...")
+        train, train_labels, test, test_labels = format_data.split(data, data_labels, dataset, n_class, 1)
 
-    #     # print(train.shape)
-    #     # print(test.shape)
-    #     # print(train_labels.shape)
-    #     # print(test_labels.shape)
+        # Try knn for different values to get best value of K
+        accuracies = []
+        indx = []
+        for i in range(1, 250, 1):
+            k = i
+            knn1 = knn(k, train, test, train_labels, test_labels, n_class)
+            knn1.get_prediction()
+            acc = knn1.accuracy()
+            accuracies.append(acc)
+            indx.append(i)
 
-    #     # Reduce dimensions 
-    #     # train, basis, pca = PCA(train)
+        plt.plot(indx, accuracies)
+        plt.title("threshold " + str(thresh))
+        plt.xlabel('k')
+        plt.ylabel('Accuracy')
+        plt.savefig('knn_' + str(dataset) + '_' + str(thresh) + '.png')
+        plt.show()
+    '''
 
-    #     # test = get_PCA_test(test, pca)
-
-    #     # Try knn for different values to get best value of K
-    #     accuracies = []
-    #     indx = []
-    #     for i in range(1, 250, 1):
-    #         k = i
-    #         knn1 = knn(k, train, test, train_labels, test_labels, n_class)
-    #         knn1.get_prediction()
-    #         acc = knn1.accuracy()
-    #         accuracies.append(acc)
-    #         indx.append(i)
-
-    #     plt.plot(indx, accuracies)
-    #     plt.title("threshold " + str(thresh))
-    #     plt.savefig('knn_' + str(dataset) + '_' + str(thresh) + '.png')
-    #     np.savetxt("accuracies_" + str(dataset) + '_' + str(thresh) + ".csv", accuracies, delimiter=",")
-    #     plt.show()
-
-    # # plt.xlabel('k')
-    # # plt.ylabel('Accuracy')
+    # plt.xlabel('k')
+    # plt.ylabel('Accuracy')
     
 
     # accuracies = []
@@ -273,6 +276,15 @@ if __name__ == '__main__':
     # mean, cov = MLE(train, train_labels, n_class)
 
     # classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
+
+    # split data in to test and train 
+        # if os.path.exists("train_" + str(dataset) + ".csv"):
+        #     print("Loading saved data...")
+        #     train = np.genfromtxt("train_" + str(dataset) + ".csv", delimiter=',').astype('int')
+        #     test = np.genfromtxt("test_" + str(dataset) + ".csv", delimiter=',').astype('int')
+        #     train_labels = np.genfromtxt("train_labels_" + str(dataset) + ".csv", delimiter=',').astype('int')
+        #     test_labels = np.genfromtxt("test_labels_" + str(dataset) + ".csv", delimiter=',').astype('int')
+        # else:
 
 
 

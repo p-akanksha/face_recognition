@@ -13,6 +13,7 @@ from knn import knn
 from boosted_svm import boosted_svm
 from scipy.io import loadmat
 from reduce_dimension import PCA, MDA
+from task1 import MLE
 
 # view images of the first class
 def display_images(data, type):
@@ -57,15 +58,44 @@ if __name__ == '__main__':
     # display_images(data_, "DATA")
 
     dataset = 0
+    n_class = 2
 
     # transform the data in a common format
     data = format_data.transform_data(data, dataset)
 
-    data_pca = PCA(data, 0.35)
+    # parameter to choose PCA or MDA
+    dim_red = 1
+    if dim_red == 0:
+        data, data_labels = PCA(data, 0.15)
+    else:        
+        data, data_labels = MDA(data, n_class, 20)
 
     # Split data
     print("Splitting data...")
     train, train_labels, test, test_labels = format_data.split(data, dataset, 2)
+
+    # Bayes Classifier
+    mean, cov = MLE(train, train_labels, n_class)
+    bayes_acc = classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
+    print('Bayes: ', bayes_acc)
+
+    # K-nn
+    k = 1
+    knn_ = knn(k, train, test, train_labels, test_labels, n_class)
+    knn_.get_prediction()
+    acc = knn_.accuracy()
+    print('K-nn: ', acc)
+
+    # SVM
+    svm = SVM(train, test, train_labels, test_labels, 'rbf', c, s)
+
+    # Boosted SVM
+
+
+
+    #######################################################
+    # Uncomment to generate graph for experimental values #
+    #######################################################
 
     # K-nn
     # Try knn for different values to get best value of K

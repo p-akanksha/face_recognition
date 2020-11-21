@@ -194,19 +194,21 @@ def split(data, data_labels, data_type, n_class, task):
 
     data_class = []
 
-    print(n_class)
-    print(data_labels.shape)
+    # print("split")
+    # print(data.shape)
+    # print(n_class)
+    # print(data_labels.shape)
 
     for i in range(n_class):
         cl = []
         for j in range(l):
             if data_labels[j] == i:
                 cl.append(data[:,j])
-        print(np.asarray(cl).shape)
+        # print(np.asarray(cl).shape)
         data_class.append(np.asarray(cl))
 
     data_class = np.asarray(data_class)
-    print(data_class.shape)
+    # print(data_class.shape)
     data_class_2 = np.zeros((m, l/n_class, n_class))
     for i in range(l/n_class):
         for j in range(n_class):

@@ -7,7 +7,7 @@ import numpy as np
 from sklearn import decomposition
 from sklearn.covariance import LedoitWolf
 
-def PCA(images, thresh):
+def PCA(images, thresh, dataset):
     m, n, l = images.shape
     # print(images.shape)
     # m, l = images.shape # 0.99
@@ -140,13 +140,13 @@ def PCA(images, thresh):
     #     if (s[i]/sm)*100 < thresh:
     #         print(i)
     #         break
+    np.savetxt("PCA_" + str(dataset) + ".csv", X_new, delimiter=",")
+    np.savetxt("PCA_labels_" + str(dataset) + ".csv", X_labels, delimiter=",")
 
     return x_new, data_labels
 
-    # return components.T, pca.components_.T, pca 
-
     
-def MDA(data, n_class, num):
+def MDA(data, n_class, num, dataset):
     m, n, l = data.shape
 
     # train = np.zeros((m, n*l))
@@ -205,7 +205,7 @@ def MDA(data, n_class, num):
 
     overall_mean = 1/float(n_class) * overall_mean
 
-    print(within_class_sm)
+    # print(within_class_sm)
 
     # between class scatter matrix
     between_class_sm = np.zeros_like(np.matmul(mean[:,:,0],mean[:,:,0].T))
@@ -220,13 +220,12 @@ def MDA(data, n_class, num):
     
     # between_class_sm = 0.33333 * (np.matmul(m1,m1.T) + np.matmul(m2,m2.T) + np.matmul(m3, m3.T))
 
-    print(between_class_sm.shape) 
-    print(np.linalg.det(within_class_sm))
+    # print(between_class_sm.shape) 
+    # print(np.linalg.det(within_class_sm))
 
     if(np.linalg.det(within_class_sm) != 0):
         within_class_inv = np.linalg.inv(within_class_sm)
         J = np.matmul(np.linalg.inv(within_class_sm), between_class_sm)
-        print(J.size)
     else:
         print("Determinent = 0 !!!!!!!!!")
 
@@ -243,15 +242,20 @@ def MDA(data, n_class, num):
     # Taking first num components 
     eig_vector_sort = eig_vector_sort.real[:,:num]
 
-    X = np.zeros(m, n*l)
+    X = np.zeros((m, n*l))
     X_labels = np.zeros((n*l, 1))
-    print("xxx", l, n)
+    # print("xxx", l, n)
     for i in range(l):
         for j in range(n):
-            X[:,n*i+j] = data[:,i,j]
+            X[:,n*i+j] = data[:,j,i]
             X_labels[n*i+j,:] = i
 
-    X_new = np.matmul(X.T, eig_vector_sort)
+    # print(X_labels)
+
+    X_new = np.matmul(X.T, eig_vector_sort).T
+
+    np.savetxt("MDA_" + str(dataset) + ".csv", X_new, delimiter=",")
+    np.savetxt("MDA_labels_" + str(dataset) + ".csv", X_labels, delimiter=",")
 
     return X_new, X_labels 
     # variance = np.std(principle_components, axis=0)
