@@ -26,4 +26,6 @@ def bayes_classifier(data, labels, params, n_class, data_type=0):
         else:
             print("xxxxxxxxxxxxx")
 
+    print("Accuracy, ", float(correct)/l)
+
     return float(correct)/l

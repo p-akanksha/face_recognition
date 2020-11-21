@@ -21,7 +21,7 @@ from sklearn.covariance import LedoitWolf
 # data: dimention reduced data 
 # data_type: specify the dataset (0: DATA, 1: POSE, 2: ILLUMINATION)
 def MLE(train, train_labels, n_class, data_type=0):
-    # print(train.shape)
+    print(train.shape)
     m, l = train.shape
 
     data_class = []
@@ -34,22 +34,29 @@ def MLE(train, train_labels, n_class, data_type=0):
         data_class.append(np.asarray(cl))
 
     data_class = np.asarray(data_class)
-    data_class_2 = np.zeros((m, l/n_class, n_class))
-    for i in range(l/n_class):
+    data_class_2 = np.zeros((m, int(l/n_class), n_class))
+    for i in range(int(l/n_class)):
         for j in range(n_class):
             data_class_2[:,i,j] = data_class[j,i,:]
+
+    print("ssssssssssssssssssss", data_class_2.shape)
 
     # compute mean of classes 
     mean = np.zeros((m, 1, n_class))
     for c in range(n_class):
         d = data_class_2[:,:,c]
+        print("d shape", d.shape)
+        print(np.mean(d, axis=1))
         mean[:, :, c] = np.reshape(np.mean(d, axis=1), (d.shape[0], 1))
+        print("mean", mean[:,:,c])
+        print(d.shape)
 
     # covariance of different features
     cov = np.zeros((m, m, n_class))
     for c in range(n_class):
         d = data_class_2[:,:,c].T
         sig = LedoitWolf().fit(d).covariance_
+        print(mean[:,:,c].squeeze())
         X = np.random.multivariate_normal(mean=mean[:,:,c].squeeze(),
                                               cov=sig,
                                               size=50)
