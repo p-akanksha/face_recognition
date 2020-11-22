@@ -43,10 +43,10 @@ class boosted_svm():
             error = np.inf
 
             while error > self.threshold:
-                svm = SVM(self.train_data, self.test_data, self.train_labels, self.test_labels, 'poly', 1, 1)
+                svm = SVM(self.train_data, self.test_data, self.train_labels, self.test_labels, 'rbf', 1, 1, True)
 
                 error = 0
-                print(self.n_samples)
+                # print(self.n_samples)
                 for i in range(self.n_samples):
                     if self.train_labels[:, i] != svm.predicted_labels[i]:
                         error = error + weights[i]  
@@ -84,8 +84,6 @@ class boosted_svm():
                 print("incorrect: ", np.sign(label) , self.test_labels[:, i])
 
         self.accuracy = correct/float(self.test_data.shape[1])
-
-        print(self.accuracy)
 
 
 

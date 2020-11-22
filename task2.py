@@ -1,4 +1,4 @@
-# Bayes classifier
+# Task 2
 # 
 # Author: Akanksha Patel
 
@@ -7,6 +7,7 @@ import os
 import cv2
 import numpy as np
 import format_data
+import classifiers
 import matplotlib.pyplot as plt
 from svm import SVM
 from knn import knn
@@ -64,32 +65,39 @@ if __name__ == '__main__':
     data = format_data.transform_data(data, dataset)
 
     # parameter to choose PCA or MDA
-    dim_red = 1
+    dim_red = 0
     if dim_red == 0:
-        data, data_labels = PCA(data, 0.15)
+        data, data_labels = PCA(data, 0.15, 22, True)
     else:        
-        data, data_labels = MDA(data, n_class, 20)
+        data, data_labels = MDA(data, n_class, 20, 22)
 
     # Split data
     print("Splitting data...")
-    train, train_labels, test, test_labels = format_data.split(data, dataset, 2)
+    train, train_labels, test, test_labels = format_data.split(data, data_labels, dataset, 3, 2)
 
     # Bayes Classifier
-    mean, cov = MLE(train, train_labels, n_class)
-    bayes_acc = classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
+    mean, cov = MLE(train, train_labels, n_class, task2=True)
+    bayes_acc = classifiers.bayes_classifier(test, test_labels.squeeze(), (mean, cov), n_class)
     print('Bayes: ', bayes_acc)
 
     # K-nn
-    k = 1
-    knn_ = knn(k, train, test, train_labels, test_labels, n_class)
+    k = 2
+    knn_ = knn(k, train, test, train_labels.squeeze(), test_labels.squeeze(), n_class)
     knn_.get_prediction()
     acc = knn_.accuracy()
     print('K-nn: ', acc)
 
     # SVM
-    svm = SVM(train, test, train_labels, test_labels, 'rbf', c, s)
-
+    # polynomial kernel
+    svm_poly = SVM(train, test, train_labels, test_labels, 'poly', 2, 1)
+    print("SVM (polynomial kernel): ", svm_poly.accuracy)
+    # rbf kernel
+    svm_rbf = SVM(train, test, train_labels, test_labels, 'rbf', 1, 1)
+    print("SVM (rbf kernel): ", svm_rbf.accuracy)
+    
     # Boosted SVM
+    b_svm = boosted_svm(train, train_labels, test, test_labels, 10)
+    print("Boosted SVM: ", b_svm.accuracy) 
 
 
 
@@ -97,70 +105,70 @@ if __name__ == '__main__':
     # Uncomment to generate graph for experimental values #
     #######################################################
 
+    
     # K-nn
     # Try knn for different values to get best value of K
-    train_labels = np.reshape(train_labels, train_labels.shape[1])
-    test_labels = np.reshape(test_labels, test_labels.shape[1])
-    accuracies = []
-    indx = []
-    for i in range(1, train_labels.shape[0], 1):
-        k = i
-        knn1 = knn(k, train, test, train_labels, test_labels, 2)
-        knn1.get_prediction()
-        acc = knn1.accuracy()
-        accuracies.append(acc)
-        print(acc)
-        indx.append(i)
+    # train_labels = np.reshape(train_labels, train_labels.shape[1])
+    # test_labels = np.reshape(test_labels, test_labels.shape[1])
+    # accuracies = []
+    # indx = []
+    # for i in range(1, train_labels.shape[0], 1):
+    #     k = i
+    #     knn1 = knn(k, train, test, train_labels, test_labels, 2)
+    #     knn1.get_prediction()
+    #     acc = knn1.accuracy()
+    #     accuracies.append(acc)
+    #     print(acc)
+    #     indx.append(i)
 
-    plt.plot(indx, accuracies)
-    plt.xlabel('k')
-    plt.ylabel('Accuracy')
-    plt.title("k v/s accuracy")
-    plt.savefig('knn_task2.png')
-    plt.show()
+    # plt.plot(indx, accuracies)
+    # plt.xlabel('k')
+    # plt.ylabel('Accuracy')
+    # plt.title("k v/s accuracy")
+    # plt.savefig('knn_task2.png')
+    # plt.show()
 
     # trials for different kernel parameter (c) and marhin_parameter (s)
-    legend = []
-    for c in range(1, 11, 1):
-        margins = []
-        accuracies = []
-        for s in range(5, 11, 1):
-            s = s/float(10)
-            print(s)
-            svm = SVM(train, test, train_labels, test_labels, 'rbf', c, s)
-            margins.append(s)
-            accuracies.append(svm.accuracy)
-        legend.append(str(c))
-        plt.plot(margins, accuracies)
+    # accuracies = []
+    # degree = []
+    # for c in range(1, 11, 1):
+    #     # margins = []
+    #     print(c)
+    #     svm = SVM(train, test, train_labels, test_labels, 'poly', c, 1)
+    #     # margins.append(s)
+    #     accuracies.append(svm.accuracy)
+    #     degree.append(c)
+    
+    # plt.plot(degree, accuracies)
         
 
-    plt.xlabel('Margin')
-    plt.ylabel('Accuracy')
-    plt.legend(legend)
+    # plt.xlabel('Degree')
+    # plt.ylabel('Accuracy')
 
-    plt.title("Accuracies of rbf kernel SVM for different margins and degree")
-    plt.savefig('svm_rbg_2.png')
-    plt.show()
+    # plt.title("Accuracies of polynomial kernel SVM for different degree")
+    # plt.savefig('svm_rbg_2222.png')
+    # plt.show()
 
 
-    # Boosted SVM
-    # trials for different number of classifiers
+    # # Boosted SVM
+    # # trials for different number of classifiers
 
-    n_classifiers = []
-    accuracies = []
-    for num in range(1, 20, 1):
-        b_svm = boosted_svm(train, train_labels, test, test_labels, num)
-        n_classifiers.append(num)
-        accuracies.append(b_svm.accuracy)
-        # legend.append(str(c))
+    # n_classifiers = []
+    # accuracies = []
+    # for num in range(1, 20, 1):
+    #     b_svm = boosted_svm(train, train_labels, test, test_labels, num)
+    #     n_classifiers.append(num)
+    #     accuracies.append(b_svm.accuracy)
+    #     # legend.append(str(c))
         
-    plt.plot(n_classifiers, accuracies)
-    plt.xlabel('Number of classifiers')
-    plt.ylabel('Accuracy')
+    # plt.plot(n_classifiers, accuracies)
+    # plt.xlabel('Number of classifiers')
+    # plt.ylabel('Accuracy')
 
-    plt.title("Accuracies v/s number of classifiers boosted SVM")
-    plt.savefig('boosted_svm.png')
-    plt.show()
+    # plt.title("Accuracies v/s number of classifiers boosted SVM")
+    # plt.savefig('boosted_svm.png')
+    # plt.show()
+    
 
 
 

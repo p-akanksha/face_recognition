@@ -3,6 +3,8 @@
 # Author: Akanksha Patel
 
 
+# To-do: Is Data Reduction applied on the whole data befor the split?
+
 import os
 import cv2
 import numpy as np
@@ -20,11 +22,47 @@ from sklearn.covariance import LedoitWolf
 # Parameters:
 # data: dimention reduced data 
 # data_type: specify the dataset (0: DATA, 1: POSE, 2: ILLUMINATION)
-def MLE(train, train_labels, n_class, data_type=0):
-    print(train.shape)
+def MLE(train, train_labels, n_class, data_type=0, task2=False):
+    # To-do: Do something about the singular covariance matrix
     m, l = train.shape
+    train_labels = train_labels.squeeze()
 
     data_class = []
+
+    if task2:
+        class1 = []
+        class2 = []
+
+        for i in range(n_class):
+            for j in range(train_labels.shape[0]):
+                if train_labels[j] == 1:
+                    class1.append(train[:,j])
+                else:
+                    class2.append(train[:,j])
+        
+        class1 = np.array(class1).T
+        class2 = np.array(class2).T
+
+        # compute mean of classes 
+        mean = np.zeros((m, 1, n_class))
+        mean[:,:,0] = np.reshape(np.mean(class1, axis=1), (class1.shape[0], 1))
+        mean[:,:,1] = np.reshape(np.mean(class2, axis=1), (class2.shape[0], 1))
+
+        # covariance of different features
+        cov = np.zeros((m, m, n_class))
+        sig1 = LedoitWolf().fit(class1.T).covariance_
+        X1 = np.random.multivariate_normal(mean=mean[:,:,0].squeeze(),
+                                              cov=sig1,
+                                              size=50)
+        cov[:,:,0] = LedoitWolf().fit(X1).covariance_
+
+        sig2 = LedoitWolf().fit(class2.T).covariance_
+        X2 = np.random.multivariate_normal(mean=mean[:,:,1].squeeze(),
+                                              cov=sig2,
+                                              size=50)
+        cov[:,:,1] = LedoitWolf().fit(X2).covariance_
+
+        return mean, cov
 
     for i in range(n_class):
         cl = []
@@ -39,67 +77,23 @@ def MLE(train, train_labels, n_class, data_type=0):
         for j in range(n_class):
             data_class_2[:,i,j] = data_class[j,i,:]
 
-    print("ssssssssssssssssssss", data_class_2.shape)
-
     # compute mean of classes 
     mean = np.zeros((m, 1, n_class))
     for c in range(n_class):
         d = data_class_2[:,:,c]
-        print("d shape", d.shape)
-        print(np.mean(d, axis=1))
         mean[:, :, c] = np.reshape(np.mean(d, axis=1), (d.shape[0], 1))
-        print("mean", mean[:,:,c])
-        print(d.shape)
 
     # covariance of different features
     cov = np.zeros((m, m, n_class))
     for c in range(n_class):
         d = data_class_2[:,:,c].T
         sig = LedoitWolf().fit(d).covariance_
-        print(mean[:,:,c].squeeze())
         X = np.random.multivariate_normal(mean=mean[:,:,c].squeeze(),
                                               cov=sig,
                                               size=50)
-        cov[:,:,c] = LedoitWolf().fit(d).covariance_
-        # if np.linalg.det(cov[:,:,c]) == 0:
-        #     print("00000000000")
-        # else:
-        #     print("dhsjhj")
-
-    # print(mean.shape)
+        cov[:,:,c] = LedoitWolf().fit(X).covariance_
 
     return mean, cov
-
-
-def get_PCA_test(data, pca):
-    m, l = data.shape
-
-    flattened_images = []
-    # To-do: change with reshape
-    for i in range(l):
-        im = data[:,i]
-        flattened_images.append(im)
-
-    flattened_images = np.array(flattened_images).T
-
-    # print("bayes: ", basis.shape)
-    # print("bayes: ", flattened_images.shape)
-
-    proj_data = pca.transform(flattened_images.T)
-    proj_data = proj_data.T
-
-    return proj_data
-
-
-def generate_data_labels(data, n_class):
-    m, l = data.shape
-
-    labels = np.zeros((1, l))
-
-    for i in range(l):
-        labels[0][i] = i%n_class
-
-    return labels
 
 # view images of the first class
 def display_images(data, type):
@@ -153,7 +147,7 @@ if __name__ == '__main__':
     # 0 : DATA
     # 1 : POSE
     # 2 : ILLUMINATION
-    dataset = 0
+    dataset = 2
 
     if dataset == 0:
         data = data_
@@ -169,7 +163,7 @@ if __name__ == '__main__':
     data = format_data.transform_data(data, dataset)
 
     # parameter to choose PCA or MDA
-    dim_red = 0
+    dim_red = 1
     if dim_red == 0:
         if os.path.exists("PCA_" + str(dataset) + ".csv") and os.path.exists("PCA_labels_" + str(dataset) + ".csv"):
             print("Loading saved PCA...")
@@ -177,7 +171,7 @@ if __name__ == '__main__':
             data_labels = np.genfromtxt("PCA_labels_" + str(dataset) + ".csv", delimiter=',').astype('float')
         else:
             print("Applying PCA...")
-            data, data_labels = PCA(data, 0.15)
+            data, data_labels = PCA(data, 0.35, dataset)
     else:
         if os.path.exists("MDA_" + str(dataset) + ".csv") and os.path.exists("MDA_labels_" + str(dataset) + ".csv"):
             print("Loading saved MDA...")
@@ -194,13 +188,13 @@ if __name__ == '__main__':
     k = 1
     knn_ = knn(k, train, test, train_labels, test_labels, n_class)
     knn_.get_prediction()
-    acc = knn_.accuracy()
-    print("knn Accuracy: ", acc)
+    knn_acc = knn_.accuracy()
+    print("knn Accuracy: ", knn_acc)
 
     # Bayes classifier
     mean, cov = MLE(train, train_labels, n_class)
     bayes_acc = classifiers.bayes_classifier(test, test_labels, (mean, cov), n_class)
-    print("Bayes Accuracy: ", acc)
+    print("Bayes Accuracy: ", bayes_acc)
 
 
     ################################################
@@ -213,7 +207,7 @@ if __name__ == '__main__':
     for thresh in range(35, 5,-10):
 
         # reduce dimensions
-        data, data_labels = PCA(data, thresh/float(100))
+        data, data_labels = PCA(data, thresh/float(100), dataset)
         
         # Split data in training and testing
         print("Splitting data...")
@@ -274,10 +268,6 @@ if __name__ == '__main__':
     # test = np.dstack((data[:,:,test_index[0,0]], data[:,:,test_index[1,0]], data[:,:,test_index[2,0]]))
     # for i in range(1, test_index.shape[1]):
     #     test = np.dstack((test, data[:,:,test_index[0,i]], data[:,:,test_index[1,i]], data[:,:,test_index[2,i]]))
-
-
-
-
 
     # print(train.shape)
     # mean, cov = MLE(train, train_labels, n_class)

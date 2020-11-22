@@ -21,23 +21,6 @@ def transform_data(data, dataset):
             result[:, 1, i] = data[:, :, 3*i+1].flatten()
             result[:, 2, i] = data[:, :, 3*i+2].flatten()
 
-        # for i in range(l/3):
-        #     im1 = np.reshape(result[:,0,3*i], (m,n))
-        #     im2 = np.reshape(result[:,1,3*i], (m,n))
-        #     im3 = np.reshape(result[:,2,3*i], (m,n))
-
-        #     cv2.imshow('image',im1)
-        #     cv2.waitKey(0)
-        #     cv2.destroyAllWindows()
-
-        #     cv2.imshow('image',im2)
-        #     cv2.waitKey(0)
-        #     cv2.destroyAllWindows()
-
-        #     cv2.imshow('image',im3)
-        #     cv2.waitKey(0)
-        #     cv2.destroyAllWindows()
-
         return result
 
 
@@ -49,14 +32,6 @@ def transform_data(data, dataset):
         for j in range(l):
             for i in range(r):
                 result[:,i,j] = data[:,:,i,j].flatten()
-
-        # for j in range(l):
-        #     for i in range(r):
-        #         im = np.reshape(result[:,i,j], (p, q)).astype(np.uint8)
-
-        #         cv2.imshow('image',im)
-        #         cv2.waitKey(0)
-        #         cv2.destroyAllWindows()
 
         return result
 
@@ -191,21 +166,14 @@ def split_util(data, data_type):
 # data_type: specify the dataset (0: DATA, 1: POSE, 2: ILLUMINATION)
 def split(data, data_labels, data_type, n_class, task):
     m, l = data.shape
-    print("ssssssssssss", m,l)
 
     data_class = []
-
-    # print("split")
-    # print(data.shape)
-    # print(n_class)
-    # print(data_labels.shape)
 
     for i in range(n_class):
         cl = []
         for j in range(l):
             if data_labels[j] == i:
                 cl.append(data[:,j])
-        # print(np.asarray(cl).shape)
         data_class.append(np.asarray(cl))
 
     data_class = np.asarray(data_class)
@@ -216,7 +184,6 @@ def split(data, data_labels, data_type, n_class, task):
             data_class_2[:,i,j] = data_class[j,i,:]
 
     data = data_class_2
-    print("DAta shape", data.shape)
 
     if task == 1:
         if data_type == 0:
@@ -245,14 +212,17 @@ def split(data, data_labels, data_type, n_class, task):
         if data_type != 0:
             print("Error! Invalid dataset")
 
+        # m - num of features
+        # n - num of samples in each class
+        # l - num of class
         m, n, l = data.shape
-        test_num = int(split_ratio * l/3)
-        train_num = l/3 - test_num
+        test_num = int(split_ratio * n)
+        train_num = n - test_num
 
         # pick random samples for each class
-        test_index = np.asarray([np.array(random.sample(range(l/3), test_num)), 
-                                 np.array(random.sample(range(l/3), test_num)), 
-                                 np.array(random.sample(range(l/3), test_num))])
+        test_index = np.asarray([np.array(random.sample(range(n), test_num)), 
+                                 np.array(random.sample(range(n), test_num)), 
+                                 np.array(random.sample(range(n), test_num))])
 
         test = np.zeros((m, 3*test_num))
         test_labels = np.zeros((1, 3*test_num))
@@ -260,7 +230,7 @@ def split(data, data_labels, data_type, n_class, task):
         # assign -1 label to facial expression
         for i in range(3):
             for j in range(test_num):
-                test[:, test_num*i+j] = data[:, i, test_index[i, j]]
+                test[:, test_num*i+j] = data[:, test_index[i, j], i]
                 if i != 1:
                     test_labels[:, test_num*i+j] = -1
                 else:
@@ -273,9 +243,9 @@ def split(data, data_labels, data_type, n_class, task):
         train_labels = np.zeros((1, 3*train_num))
         for i in range(3):
             count = 0
-            for j in range(l/3):
+            for j in range(n):
                 if j not in test_index[i,:]:
-                    train[:, train_num*i+count] = data[:, i, j]
+                    train[:, train_num*i+count] = data[:, j, i]
                     if i != 1:
                         train_labels[:, test_num*i+count] = -1
                     else:
@@ -291,55 +261,3 @@ def split(data, data_labels, data_type, n_class, task):
 
     else:
         print("Invalid task selection.")
-
-
-# # Function to split data into test and train
-# # Parameters:
-# # data: array of data
-# # data_type: specify the dataset (0: DATA, 1: POSE, 2: ILLUMINATION)
-# def split(data, data_type=0):
-#     # fraction of test data
-#     split_ratio = 0.3
-
-#     if data_type == 0:
-
-#         m, n, l = data.shape
-#         test_num = int(split_ratio * l/3)
-
-#         # pick random samples for each class
-#         test_index_1 = np.array(random.sample(range(200), test_num))
-#         test_index_2 = np.array(random.sample(range(200), test_num))
-#         test_index_3 = np.array(random.sample(range(200), test_num))
-
-#         test_index_1 = 3*test_index_1
-#         test_index_2 = 3*test_index_2 + np.ones(test_index_1.shape)
-#         test_index_3 = 3*test_index_3 + 2*np.ones(test_index_1.shape)
-
-#         # test_index_1.sort()
-#         # test_index_2.sort()
-#         # test_index_3.sort()
-
-#         # select test data
-#         test_index = np.vstack((test_index_1, test_index_2, test_index_3)).astype('int')
-
-#         # select train data 
-#         train_index1 = []
-#         train_index2 = []
-#         train_index3 = []
-#         for i in range(600):
-#             if i not in test_index:
-#                 if i%3 == 0:
-#                     train_index1.append(i)
-#                 elif i%3 == 1:
-#                     train_index2.append(i)
-#                 else:
-#                     train_index3.append(i)
-
-#         train_index1 = np.array(train_index1)
-#         train_index2 = np.array(train_index2)
-#         train_index3 = np.array(train_index3)
-
-#         train_index = np.vstack((train_index1, train_index2, train_index3))
-
-#         np.savetxt("test.csv", test_index, delimiter=",")
-#         np.savetxt("train.csv", train_index, delimiter=",")

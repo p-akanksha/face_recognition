@@ -13,7 +13,7 @@ from sklearn.utils import shuffle
 random.seed(0)
 
 class SVM:
-    def __init__(self, train, test, train_labels, test_labels, kernel, c, s):
+    def __init__(self, train, test, train_labels, test_labels, kernel, c, s, boost=False):
 
         # data
         self.train_data = train
@@ -41,6 +41,7 @@ class SVM:
 
         # for boosted svm
         self.alpha = None
+        self.boost = boost
 
         self.train()
         self.test()
@@ -101,7 +102,7 @@ class SVM:
             G = cvxopt.matrix(-np.eye(self.num_samples))
             h = cvxopt.matrix(np.zeros(self.num_samples))
         A = cvxopt.matrix(self.train_labels.astype(np.double))
-        print(self.train_labels.shape)
+        # print(self.train_labels.shape)
         b = cvxopt.matrix(np.zeros(1))
 
         # Set CVXOPT options
@@ -118,21 +119,11 @@ class SVM:
         self.a = np.ravel(sol['x'])
         # print(self.a)
 
-
-        # Find indices of the support vectors, which have non-zero Lagrange multipliers, and save the support vectors
-        # as instance attributes
-        # is_sv = self.a > 1e-5
-        # self.sv_X = self.train_data[:, is_sv].T
-        # self.sv_y = self.train_labels[:, is_sv].T
-        # self.a = self.a[is_sv]
-        # # Compute b as 1/N_s sum_i{y_i - sum_sv{self.a_sv * y_sv * K(x_sv, x_i}}
-        # sv_index = np.arange(len(self.a))[is_sv]
         self.b = 0
         for i in range(len(self.a)):
             self.b += self.train_labels[:, i]
             self.b -= np.sum(self.a * self.train_labels.T * K[i, :])
         self.b /= len(self.a)
-        # Compute w only if the kernel is linear
 
     def predict(self, x, i):
         s = 0
@@ -151,53 +142,38 @@ class SVM:
 
         return np.sign(s)
 
-    # def test(self):
-    #     # f(x) = sgn(sum_i a_i*y_i*K(x, x_i) + b)
-
-    #     predicted_labels = []
-
-    #     correct = 0
-    #     for i in range(self.test_data.shape[1]):
-    #         x = np.reshape(self.test_data[:, i], (self.test_data.shape[0],1))
-    #         pred_label = self.predict(x, i)
-
-    #         predicted_labels.append(pred_label)
-
-    #         if pred_label == self.test_labels[:, i]:
-    #             correct = correct + 1
-
-    #         else:
-    #             print("incorrect: ", pred_label , self.test_labels[:, i])
-
-    #     self.predicted_labels = np.array(predicted_labels)        
-
-    #     self.accuracy = correct/float(self.test_data.shape[1])
-
-    #     print(self.accuracy)
-    #     print(self.s)
-
     def test(self):
-        # f(x) = sgn(sum_i a_i*y_i*K(x, x_i) + b)
+        if not self.boost:
 
-        predicted_labels = []
+            predicted_labels = []
 
-        correct = 0
-        for i in range(self.train_data.shape[1]):
-            x = np.reshape(self.train_data[:, i], (self.train_data.shape[0],1))
-            pred_label = self.predict(x, i)
+            correct = 0
+            for i in range(self.test_data.shape[1]):
+                x = np.reshape(self.test_data[:, i], (self.test_data.shape[0],1))
+                pred_label = self.predict(x, i)
 
-            predicted_labels.append(pred_label)
+                predicted_labels.append(pred_label)
 
-            if pred_label == self.train_labels[:, i]:
-                correct = correct + 1
+                if pred_label == self.test_labels[:, i]:
+                    correct = correct + 1
 
-            # else:
-                # print("incorrect: ", pred_label , self.train_labels[:, i])
+            self.predicted_labels = np.array(predicted_labels)        
 
-        self.predicted_labels = np.array(predicted_labels)        
+            self.accuracy = correct/float(self.test_data.shape[1])
 
-        self.accuracy = correct/float(self.train_data.shape[1])
+        else:
+            predicted_labels = []
 
-        print("SVM accuracy: ", self.accuracy)
-        # print(self.s)
+            correct = 0
+            for i in range(self.train_data.shape[1]):
+                x = np.reshape(self.train_data[:, i], (self.train_data.shape[0],1))
+                pred_label = self.predict(x, i)
 
+                predicted_labels.append(pred_label)
+
+                if pred_label == self.train_labels[:, i]:
+                    correct = correct + 1
+
+            self.predicted_labels = np.array(predicted_labels)        
+
+            self.accuracy = correct/float(self.train_data.shape[1])
